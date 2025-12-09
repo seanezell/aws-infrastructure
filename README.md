@@ -1,5 +1,112 @@
-# aws-infrastructure
-AWS account level infrastructure IaC
+# AWS Infrastructure
+
+Foundational AWS account-level infrastructure managed as code using Terraform. This repository provisions the core resources required for secure, automated deployments and state management across your AWS environment.
+
+## Overview
+
+This infrastructure establishes the foundational components needed to support other AWS projects and deployments:
+
+- **Terraform State Management**: S3 backend with DynamoDB locking for safe, concurrent operations
+- **GitHub Actions Integration**: OIDC provider and IAM roles for secure, keyless CI/CD deployments
+- **API Gateway Configuration**: Account-level settings and custom domain setup
+- **CloudWatch Logging**: IAM roles for API Gateway logging
+
+## Features
+
+### Terraform Backend
+- S3 bucket with versioning, encryption, and lifecycle policies
+- DynamoDB table for state locking
+- Public access blocking and private ACLs
+
+### GitHub Actions OIDC
+- OpenID Connect provider for GitHub
+- IAM role with trust policy for GitHub Actions workflows
+- Eliminates need for long-lived AWS credentials
+
+### API Gateway
+- Account-level CloudWatch logging configuration
+- Custom domain name support
+- Centralized API management
+
+## Prerequisites
+
+- Terraform >= 1.0
+- AWS CLI configured with appropriate credentials
+- AWS account with administrative access
+- GitHub repository (for OIDC integration)
+
+## Usage
+
+### Initial Setup
+
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd aws-infrastructure
+   ```
+
+2. Initialize Terraform:
+   ```bash
+   terraform init
+   ```
+
+3. Review the planned changes:
+   ```bash
+   terraform plan
+   ```
+
+4. Apply the infrastructure:
+   ```bash
+   terraform apply
+   ```
+
+### Using the GitHub Actions Role
+
+After deployment, configure your GitHub Actions workflows to use the OIDC role:
+
+```yaml
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+```
+
+### Configuring Terraform Backend
+
+Other projects can use the created S3 backend:
+
+```hcl
+terraform {
+  backend "s3" {
+    bucket         = "<your-state-bucket>"
+    key            = "<project>/terraform.tfstate"
+    region         = "<your-region>"
+    dynamodb_table = "<your-lock-table>"
+    encrypt        = true
+  }
+}
+```
+
+## Security
+
+- All S3 buckets use server-side encryption (SSE)
+- Public access is blocked on state buckets
+- IAM roles follow least-privilege principles
+- OIDC eliminates static credentials in CI/CD
+
+## Maintenance
+
+- State files are versioned for recovery
+- Lifecycle policies manage old versions
+- Regular updates to provider versions recommended
 
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
