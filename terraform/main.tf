@@ -132,6 +132,11 @@ resource "aws_iam_role_policy" "cloudwatch" {
 EOF
 }
 
+provider "aws" {
+    alias  = "useast1"
+    region = "us-east-1"
+}
+
 resource "aws_api_gateway_domain_name" "api" {
     certificate_arn = "arn:aws:acm:us-east-1:736813861381:certificate/b225eb43-6514-478d-a42f-5c4d229f5bf1"
     domain_name     = "api.seanezell.com"
