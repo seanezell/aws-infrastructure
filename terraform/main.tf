@@ -159,3 +159,16 @@ resource "aws_iam_openid_connect_provider" "github" {
         "1c58a3a8518e8759bf075b76b750d4f2df264fcd"
     ]
 }
+
+resource "aws_route53_zone" "primary" {
+    name = "seanezell.com"
+}
+
+# api records
+resource "aws_route53_record" "api" {
+    zone_id = aws_route53_zone.primary.zone_id
+    name    = "api"
+    type    = "CNAME"
+    ttl     = 300
+    records = ["djl4zqy00azhv.cloudfront.net"]
+}
