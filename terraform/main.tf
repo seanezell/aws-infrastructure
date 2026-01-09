@@ -1,4 +1,11 @@
 terraform {
+    required_providers {
+        aws = {
+            source  = "hashicorp/aws"
+            version = "~> 5.0"
+        }
+    }
+    
     backend "s3" {
         bucket = "seanezell-terraform-backend"
         key = "terraformbacked/terraform.tfstate"
@@ -57,6 +64,8 @@ resource "aws_s3_bucket_lifecycle_configuration" "backend_lifecycle" {
     rule {
         id     = "state-prune"
         status = "Enabled"
+
+        filter {}
 
         noncurrent_version_expiration {
             noncurrent_days = 90
