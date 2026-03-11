@@ -46,7 +46,8 @@ resource "aws_iam_role_policy" "github_actions_terraform_policy" {
           "iam:*",
           "sts:GetCallerIdentity",
           "apigateway:*",
-          "route53:*"
+          "route53:*",
+          "cloudfront:GetCloudFrontOriginAccessIdentity"
         ]
         Resource = "*"
       }
