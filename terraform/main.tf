@@ -202,6 +202,18 @@ resource "aws_s3_bucket_public_access_block" "cdn_content" {
     restrict_public_buckets = true
 }
 
+resource "aws_s3_bucket_cors_configuration" "cdn_content" {
+    bucket = aws_s3_bucket.cdn_content.id
+
+    cors_rule {
+        allowed_headers = ["*"]
+        allowed_methods = ["PUT", "POST"]
+        allowed_origins = ["https://what2play.seanezell.com"]
+        expose_headers  = ["ETag"]
+        max_age_seconds = 3000
+    }
+}
+
 resource "aws_cloudfront_distribution" "cdn" {
     origin {
         domain_name = aws_s3_bucket.cdn_content.bucket_regional_domain_name
