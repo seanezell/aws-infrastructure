@@ -222,6 +222,24 @@ resource "aws_s3_bucket_cors_configuration" "cdn_content" {
     }
 }
 
+resource "aws_s3_bucket_lifecycle_configuration" "cdn_content" {
+    bucket = aws_s3_bucket.cdn_content.id
+
+    rule {
+        id     = "expire-avatar-versions"
+        status = "Enabled"
+
+        filter {
+            prefix = "what2play/"
+        }
+
+        noncurrent_version_expiration {
+            noncurrent_days = 30
+        }
+    }
+}
+
+
 resource "aws_cloudfront_distribution" "cdn" {
     origin {
         domain_name = aws_s3_bucket.cdn_content.bucket_regional_domain_name
