@@ -193,6 +193,14 @@ resource "aws_s3_bucket" "cdn_content" {
     }
 }
 
+resource "aws_s3_bucket_versioning" "cdn_versioning" {
+    bucket = aws_s3_bucket.cdn_content.id
+
+    versioning_configuration {
+        status = "Enabled"
+    }
+}
+
 resource "aws_s3_bucket_public_access_block" "cdn_content" {
     bucket = aws_s3_bucket.cdn_content.id
     
@@ -207,7 +215,7 @@ resource "aws_s3_bucket_cors_configuration" "cdn_content" {
 
     cors_rule {
         allowed_headers = ["*"]
-        allowed_methods = ["PUT", "POST"]
+        allowed_methods = ["PUT", "POST", "GET"]
         allowed_origins = ["https://what2play.seanezell.com"]
         expose_headers  = ["ETag"]
         max_age_seconds = 3000
@@ -218,12 +226,11 @@ resource "aws_cloudfront_distribution" "cdn" {
     origin {
         domain_name = aws_s3_bucket.cdn_content.bucket_regional_domain_name
         origin_id   = "S3CDNContent"
-        
-        s3_origin_config {
-            origin_access_identity = aws_cloudfront_origin_access_identity.cdn.cloudfront_access_identity_path
-        }
+        origin_access_control_id = aws_cloudfront_origin_access_control.cdn_oac.id
     }
 
+    comment = "cdn.seanezell.com"
+    price_class = "PriceClass_100" # US, Canada, Europe
     enabled = true
 
     default_cache_behavior {
@@ -244,6 +251,25 @@ resource "aws_cloudfront_distribution" "cdn" {
         max_ttl                = 31536000
     }
 
+    ordered_cache_behavior {
+        path_pattern     = "/what2play/avatars/*"
+        target_origin_id = "S3CDNContent"
+        viewer_protocol_policy = "redirect-to-https"
+        allowed_methods  = ["GET", "HEAD"]
+        cached_methods   = ["GET", "HEAD"]
+        default_ttl      = 86400
+        min_ttl          = 0
+        max_ttl          = 31536000
+        compress         = true
+
+        forwarded_values {
+            query_string = false
+            cookies {
+                forward = "none"
+            }
+        }
+    }
+
     restrictions {
         geo_restriction {
             restriction_type = "none"
@@ -251,7 +277,9 @@ resource "aws_cloudfront_distribution" "cdn" {
     }
 
     viewer_certificate {
-        cloudfront_default_certificate = true
+        acm_certificate_arn      = "arn:aws:acm:us-east-1:736813861381:certificate/b225eb43-6514-478d-a42f-5c4d229f5bf1"
+        minimum_protocol_version = "TLSv1.2_2021"
+        ssl_support_method       = "sni-only"
     }
 
     tags = {
@@ -260,26 +288,33 @@ resource "aws_cloudfront_distribution" "cdn" {
     }
 }
 
-resource "aws_cloudfront_origin_access_identity" "cdn" {
-    comment = "OAI for shared CDN content"
+resource "aws_cloudfront_origin_access_control" "cdn_oac" {
+  name                              = "shared-cdn-oac"
+  description                       = "OAC for seanezell-cdn-content bucket"
+  origin_access_control_origin_type = "s3"
+  signing_behavior                  = "always"          # or "no-override" if you prefer
+  signing_protocol                  = "sigv4"
 }
 
 resource "aws_s3_bucket_policy" "cdn_content" {
-    bucket = aws_s3_bucket.cdn_content.id
+  bucket = aws_s3_bucket.cdn_content.id
 
-    policy = jsonencode({
-        Version = "2012-10-17"
-        Statement = [
-            {
-                Effect = "Allow"
-                Principal = {
-                    AWS = aws_cloudfront_origin_access_identity.cdn.iam_arn
-                }
-                Action   = "s3:GetObject"
-                Resource = "${aws_s3_bucket.cdn_content.arn}/*"
-            }
-        ]
-    })
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect    = "Allow"
+        Principal = { Service = "cloudfront.amazonaws.com" }
+        Action    = "s3:GetObject"
+        Resource  = "${aws_s3_bucket.cdn_content.arn}/*"
+        Condition = {
+          StringEquals = {
+            "AWS:SourceArn" = aws_cloudfront_distribution.cdn.arn
+          }
+        }
+      }
+    ]
+  })
 }
 
 resource "aws_route53_record" "cdn" {
