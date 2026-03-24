@@ -1,5 +1,5 @@
 terraform {
-  required_version = ">= 1.10.0"
+  required_version = ">= 1.14.0"
 
   required_providers {
     aws = {
@@ -8,9 +8,6 @@ terraform {
     }
   }
 
-  # S3-native locking (use_lockfile) replaces DynamoDB; dynamodb_table is deprecated and
-  # removed. Other roots using this bucket must use the same backend settings and run
-  # `terraform init -reconfigure` before this configuration is applied to destroy the old lock table.
   backend "s3" {
     bucket       = "seanezell-terraform-backend"
     key          = "terraformbacked/terraform.tfstate"
