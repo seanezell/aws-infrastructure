@@ -10,6 +10,7 @@ locals {
           "cognito-idp:*",
           "iam:*",
           "sts:GetCallerIdentity",
+          "sts:AssumeRoleWithWebIdentity",
           "apigateway:*",
           "route53:*",
           "cloudfront:*"
