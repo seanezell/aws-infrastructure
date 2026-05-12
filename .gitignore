@@ -1,3 +1,4 @@
+tooling/
 .vscode/
 *.code-workspace
 terraform/.terraform.lock.hcl
